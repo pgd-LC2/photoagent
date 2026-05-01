@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenRouter 多模态创作 Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        .message-content pre { margin: 0.75rem 0; border-radius: 0.5rem; }
+        .message-content code { font-family: 'Fira Code', monospace; font-size: 0.875rem; }
+        .message-content p { margin-bottom: 0.5rem; }
+        .message-content ul, .message-content ol { margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .message-content h1, .message-content h2, .message-content h3 { margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600; }
+        .message-content h1 { font-size: 1.5rem; }
+        .message-content h2 { font-size: 1.25rem; }
+        .message-content h3 { font-size: 1.125rem; }
+        .message-content img { max-width: 100%; border-radius: 0.5rem; margin: 0.5rem 0; }
+        .message-content blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; color: #9ca3af; font-style: italic; }
+        .message-content table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
+        .message-content th, .message-content td { border: 1px solid #374151; padding: 0.5rem; text-align: left; }
+        .message-content th { background: #1f2937; }
+
+        .tool-card { transition: all 0.2s; }
+        .tool-card:hover { transform: translateX(2px); }
+        
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 计划状态样式 */
+        .plan-item { transition: all 0.2s; border-left: 3px solid transparent; }
+        .plan-item.pending { border-left-color: #6b7280; }
+        .plan-item.in_progress { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.08); }
+        .plan-item.completed { border-left-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+        .plan-item.failed { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+        .plan-status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .plan-status-dot.pending { background: #6b7280; }
+        .plan-status-dot.in_progress { background: #f59e0b; animation: pulse 1.5s infinite; }
+        .plan-status-dot.completed { background: #10b981; }
+        .plan-status-dot.failed { background: #ef4444; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Reasoning / 思维链样式 */
+        .reasoning-block summary { list-style: none; }
+        .reasoning-block summary::-webkit-details-marker { display: none; }
+        .reasoning-block summary::before {
+            content: '▸';
+            display: inline-block;
+            margin-right: 4px;
+            transition: transform 0.2s;
+            font-size: 10px;
+        }
+        .reasoning-block[open] summary::before { transform: rotate(90deg); }
+
+        /* 流式光标 */
+        .stream-cursor {
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex overflow-hidden">
+
+    <!-- 左侧边栏 -->
+    <aside class="w-72 bg-gray-800 border-r border-gray-700 flex flex-col">
+        <div class="p-4 border-b border-gray-700">
+            <h1 class="text-lg font-bold text-blue-400 flex items-center gap-2">
+                <i class="fa-solid fa-robot"></i>
+                多模态创作 Agent
+            </h1>
+            <p class="text-xs text-gray-400 mt-1">基于 OpenRouter</p>
+        </div>
+
+        <!-- 模型选择 -->
+        <div class="p-4 border-b border-gray-700">
+            <label class="text-xs text-gray-400 uppercase font-semibold">模型</label>
+            <select id="modelSelect" class="mt-1 w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+                <option value="moonshotai/kimi-k2.6">Moonshot Kimi K2.6</option>
+                <option value="minimax/minimax-m2.7">Minimax M2.7</option>
+                <option value="xiaomi/mimo-v2.5">Xiaomi MiMo V2.5</option>
+            </select>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="p-4 border-b border-gray-700 space-y-2">
+            <button onclick="newSession()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded flex items-center justify-center gap-2 transition">
+                <i class="fa-solid fa-plus"></i> 新会话
+            </button>
+            <button onclick="refreshFiles()" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm py-2 px-3 rounded flex items-center justify-center gap-2 transition">
+                <i class="fa-solid fa-rotate"></i> 刷新文件
+            </button>
+        </div>
+
+        <!-- 计划面板 -->
+        <div class="p-3 border-b border-gray-700">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-xs text-gray-400 uppercase font-semibold">
+                    <i class="fa-solid fa-list-check mr-1"></i> 计划
+                </label>
+                <span id="planCount" class="text-xs text-gray-500 hidden">0</span>
+            </div>
+            <div id="planContainer" class="text-sm space-y-1 max-h-48 overflow-y-auto">
+                <div class="text-gray-500 text-xs italic">暂无计划</div>
+            </div>
+        </div>
+
+        <!-- 隐式上下文面板 -->
+        <div class="p-3 border-b border-gray-700">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-xs text-gray-400 uppercase font-semibold">
+                    <i class="fa-solid fa-eye-slash mr-1"></i> 隐式上下文
+                </label>
+                <span id="contextBadge" class="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 hidden">OFF</span>
+            </div>
+            <div id="contextContainer" class="text-sm">
+                <div class="text-gray-500 text-xs italic">无活跃上下文</div>
+            </div>
+        </div>
+
+        <!-- 文件浏览器 -->
+        <div class="flex-1 overflow-y-auto p-3">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-xs text-gray-400 uppercase font-semibold">Workspace</label>
+                <span id="fileCount" class="text-xs text-gray-500">0 items</span>
+            </div>
+            <div id="fileTree" class="text-sm space-y-1">
+                <div class="text-gray-500 text-xs italic">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="p-3 border-t border-gray-700 text-xs text-gray-500">
+            <div class="flex items-center gap-2">
+                <div id="statusDot" class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span id="statusText">就绪</span>
+            </div>
+            <div class="mt-1 truncate" id="sessionInfo">会话: 未创建</div>
+        </div>
+    </aside>
+
+    <!-- 主区域 -->
+    <main class="flex-1 flex flex-col min-w-0">
+        <!-- 顶部栏 -->
+        <header class="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
+            <div class="flex items-center gap-3">
+                <h2 class="font-semibold text-gray-200">对话</h2>
+                <span id="iterationBadge" class="hidden bg-blue-900 text-blue-300 text-xs px-2 py-0.5 rounded-full">思考中...</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openLogModal()" class="text-gray-400 hover:text-gray-200 text-sm px-3 py-1.5 rounded hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-file-waveform mr-1"></i> 调用日志
+                </button>
+                <button onclick="clearChat()" class="text-gray-400 hover:text-gray-200 text-sm px-3 py-1.5 rounded hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-trash-can mr-1"></i> 清空
+                </button>
+            </div>
+        </header>
+
+        <!-- 消息区域 -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- 欢迎消息 -->
+            <div class="fade-in">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <div class="flex-1 bg-gray-800 rounded-lg p-4 border border-gray-700">
+                        <div class="message-content text-gray-200">
+                            <p class="font-semibold text-lg mb-2">👋 欢迎来到多模态创作 Agent！</p>
+                            <p>我是你的 AI 创作助手，具备以下能力：</p>
+                            <ul class="list-disc ml-5 mt-2 space-y-1 text-gray-300">
+                                <li><strong class="text-blue-400">🎨 图片生成</strong> — 使用 Gemini、Flux 等模型生成高质量图片</li>
+                                <li><strong class="text-purple-400">🎬 视频生成</strong> — 使用 Veo、Wan 等模型生成 AI 视频</li>
+                                <li><strong class="text-green-400">📝 文件管理</strong> — 创建、读取、编辑 Workspace 中的文件</li>
+                                <li><strong class="text-yellow-400">⚡ 代码执行</strong> — 运行脚本、安装依赖、处理文件</li>
+                                <li><strong class="text-cyan-400">🔍 网络搜索</strong> — 实时搜索互联网获取最新信息</li>
+                                <li><strong class="text-sky-400">🌐 网页获取</strong> — 读取指定 URL 的网页/PDF 内容</li>
+                                <li><strong class="text-emerald-400">📅 日期时间</strong> — 获取当前时间用于时间敏感任务</li>
+                            </ul>
+                            <p class="mt-3">你可以直接告诉我你的创意，例如：</p>
+                            <blockquote class="mt-1">"帮我生成一张赛博朋克风格的城市夜景图，16:9，保存为 cyberpunk_city.png，然后用这张图作为首帧生成一个 5 秒的短视频，镜头向前推进。"</blockquote>
+                            <p class="mt-2">也可以问我实时信息，例如：</p>
+                            <blockquote class="mt-1">"今天有什么 AI 新闻？" 或 "总结一下 https://example.com/article 这篇文章的内容"</blockquote>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="p-4 bg-gray-800 border-t border-gray-700">
+            <div class="max-w-4xl mx-auto relative">
+                <textarea 
+                    id="userInput" 
+                    rows="3"
+                    placeholder="输入你的指令... (Shift+Enter 换行, Enter 发送)"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 pr-12 text-gray-100 placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500 transition"
+                ></textarea>
+                <button 
+                    onclick="sendMessage()"
+                    id="sendBtn"
+                    class="absolute right-3 bottom-3 bg-blue-600 hover:bg-blue-700 text-white w-8 h-8 rounded flex items-center justify-center transition"
+                >
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+            <div class="max-w-4xl mx-auto mt-2 text-xs text-gray-500 flex items-center justify-between">
+                <span>Agent 会自主思考并使用工具完成任务</span>
+                <span id="typingIndicator" class="hidden flex items-center gap-1">
+                    <span class="typing-dot w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                    <span class="typing-dot w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                    <span class="typing-dot w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                </span>
+            </div>
+        </div>
+    </main>
+
+    <!-- 调用日志模态框 -->
+    <div id="logModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[85vh] flex flex-col border border-gray-700">
+            <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                <h3 class="font-semibold text-gray-200 flex items-center gap-2">
+                    <i class="fa-solid fa-file-waveform text-blue-400"></i> 调用日志
+                </h3>
+                <button onclick="closeLogModal()" class="text-gray-400 hover:text-gray-200">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="flex border-b border-gray-700">
+                <div class="flex-1 overflow-x-auto">
+                    <div id="logTabs" class="flex text-xs">
+                        <!-- 动态生成标签 -->
+                    </div>
+                </div>
+                <div class="px-3 py-2 border-l border-gray-700">
+                    <button onclick="refreshLogs()" class="text-gray-400 hover:text-blue-400 text-xs transition">
+                        <i class="fa-solid fa-rotate mr-1"></i>刷新
+                    </button>
+                </div>
+            </div>
+            <div id="logContent" class="flex-1 overflow-y-auto p-4 text-sm font-mono space-y-2">
+                <div class="text-gray-500 italic">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件预览模态框 -->
+    <div id="fileModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col border border-gray-700">
+            <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                <h3 id="fileModalTitle" class="font-semibold text-gray-200">文件预览</h3>
+                <button onclick="closeFileModal()" class="text-gray-400 hover:text-gray-200">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="fileModalContent" class="flex-1 overflow-auto p-4 text-sm font-mono text-gray-300 whitespace-pre-wrap"></div>
+            <div class="p-4 border-t border-gray-700 flex justify-end gap-2">
+                <a id="fileDownloadLink" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition">
+                    <i class="fa-solid fa-download mr-1"></i> 下载
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

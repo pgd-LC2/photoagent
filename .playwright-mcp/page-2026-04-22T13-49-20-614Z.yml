@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - generic [ref=e3]:
+      - heading " 多模态创作 Agent" [level=1] [ref=e4]:
+        - generic [ref=e5]: 
+        - text: 多模态创作 Agent
+      - paragraph [ref=e6]: 基于 OpenRouter
+    - generic [ref=e7]:
+      - text: 模型
+      - combobox [ref=e8]:
+        - option "Moonshot Kimi K2.6" [selected]
+        - option "Minimax M2.7"
+        - option "Xiaomi MiMo V2 Pro"
+    - generic [ref=e9]:
+      - button "+ 新会话" [ref=e10] [cursor=pointer]:
+        - generic [ref=e11]: +
+        - text: 新会话
+      - button " 刷新文件" [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]: 
+        - text: 刷新文件
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - generic [ref=e17]: 
+        - text: 计划
+      - generic [ref=e19]: 暂无计划
+    - generic [ref=e20]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: 
+        - text: 隐式上下文
+      - generic [ref=e25]: 无活跃上下文
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e28]: Workspace
+        - generic [ref=e29]: 0 items
+      - generic [ref=e31]: 加载中...
+    - generic [ref=e32]:
+      - generic [ref=e35]: 就绪
+      - generic [ref=e36]: "会话: 未创建"
+  - main [ref=e37]:
+    - generic [ref=e38]:
+      - heading "对话" [level=2] [ref=e40]
+      - generic [ref=e41]:
+        - button " 调用日志" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43]: 
+          - text: 调用日志
+        - button " 清空" [ref=e44] [cursor=pointer]:
+          - generic [ref=e45]: 
+          - text: 清空
+    - generic [ref=e48]:
+      - generic [ref=e50]: 
+      - generic [ref=e52]:
+        - paragraph [ref=e53]: 👋 欢迎来到多模态创作 Agent！
+        - paragraph [ref=e54]: 我是你的 AI 创作助手，具备以下能力：
+        - list [ref=e55]:
+          - listitem [ref=e56]:
+            - strong [ref=e57]: 🎨 图片生成
+            - text: — 使用 Gemini、Flux 等模型生成高质量图片
+          - listitem [ref=e58]:
+            - strong [ref=e59]: 🎬 视频生成
+            - text: — 使用 Veo、Wan 等模型生成 AI 视频
+          - listitem [ref=e60]:
+            - strong [ref=e61]: 📝 文件管理
+            - text: — 创建、读取、编辑 Workspace 中的文件
+          - listitem [ref=e62]:
+            - strong [ref=e63]: ⚡ 代码执行
+            - text: — 运行脚本、安装依赖、处理文件
+          - listitem [ref=e64]:
+            - strong [ref=e65]: 🔍 网络搜索
+            - text: — 实时搜索互联网获取最新信息
+          - listitem [ref=e66]:
+            - strong [ref=e67]: 🌐 网页获取
+            - text: — 读取指定 URL 的网页/PDF 内容
+          - listitem [ref=e68]:
+            - strong [ref=e69]: 📅 日期时间
+            - text: — 获取当前时间用于时间敏感任务
+        - paragraph [ref=e70]: 你可以直接告诉我你的创意，例如：
+        - blockquote [ref=e71]: "\"帮我生成一张赛博朋克风格的城市夜景图，16:9，保存为 cyberpunk_city.png，然后用这张图作为首帧生成一个 5 秒的短视频，镜头向前推进。\""
+        - paragraph [ref=e72]: 也可以问我实时信息，例如：
+        - blockquote [ref=e73]: "\"今天有什么 AI 新闻？\" 或 \"总结一下 https://example.com/article 这篇文章的内容\""
+    - generic [ref=e74]:
+      - generic [ref=e75]:
+        - textbox "输入你的指令... (Shift+Enter 换行, Enter 发送)" [ref=e76]
+        - button "" [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: 
+      - generic [ref=e80]: Agent 会自主思考并使用工具完成任务
+  - text:     
